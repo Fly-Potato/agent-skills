@@ -1,0 +1,44 @@
+{
+  "skill_name": "tauri-v2",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a Tauri v2 project. Its src-tauri directory already has lib.rs with the builder pattern, main.rs, Cargo.toml with tauri 2.0.0, and a tauri.conf.json. I need to add a new Rust command called `get_user_settings` that reads from a managed state struct `UserSettings` (with fields `theme: String` and `language: String`). The command should be async, return a Result, and be registered properly. Write the Rust code I need and tell me what to add to each file. The project already uses `thiserror` and `serde` for error handling.",
+      "expected_output": "A correctly written async Tauri v2 command with State injection, registered in generate_handler!, with proper error type using thiserror+Serialize, following v2 conventions (WebviewWindow not Window, etc.)",
+      "files": [],
+      "assertions": [
+        "Wraps UserSettings in std::sync::Mutex with a type alias (Tauri v2 best practice)",
+        "Command uses tauri::State for managed state injection",
+        "Command is registered in generate_handler![] macro in lib.rs",
+        "State is registered via .manage() in the builder chain (not Arc or other wrappers)",
+        "Uses Tauri v2 API names (tauri::State, not old v1 patterns)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I am building a Tauri v2 app. I want to add a file open dialog so users can pick an image file, and then read that file contents as bytes. I need the complete setup: the Rust-side plugin registration, the TypeScript frontend code to open the dialog, and the capability/permission configuration. The project uses pnpm and has a vite + React frontend. The src-tauri directory already exists with the standard structure. Tell me every file I need to touch and what to write.",
+      "expected_output": "Proper plugin registration (.plugin(tauri_plugin_dialog::init()) and .plugin(tauri_plugin_fs::init()) in lib.rs), capability file with dialog:default and fs:allow-read-file permissions, correct JS import from @tauri-apps/plugin-dialog and @tauri-apps/plugin-fs, properly scoped permissions",
+      "files": [],
+      "assertions": [
+        "tauri-plugin-dialog is registered via .plugin() in the Rust builder (correct v2 plugin pattern)",
+        "Capability file includes dialog:default or equivalent permission for the file dialog",
+        "Frontend import uses @tauri-apps/plugin-dialog (not old @tauri-apps/api path)",
+        "Provides correct file reading approach (plugin fs or custom command) with proper scope/permissions",
+        "Mentions NPM package installation step (pnpm add @tauri-apps/plugin-dialog)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have a Tauri v2 desktop app and I want to add a system tray icon. When the user right-clicks the tray icon, they should see a menu with three items: Show Window (shows and focuses the main window), Check for Updates (emits a custom event called check-update to the main window), and Quit (exits the app). Left-clicking the tray icon should also show the main window. Write the complete Rust code I need for the tray setup, including where to put it in lib.rs, and tell me what capabilities/permissions I need to add.",
+      "expected_output": "TrayIconBuilder with menu built via MenuBuilder + MenuItemBuilder, using TrayIconEvent for left-click handling, on_menu_event for menu items, using Manager::get_webview_window, AppHandle::exit, and Emitter::emit_to, with core:tray:default and core:menu:default permissions",
+      "files": [],
+      "assertions": [
+        "Uses app.emit_to() for emitting events to a specific window (Tauri v2 event pattern, not window.emit())",
+        "Uses app.get_webview_window() to access window (Tauri v2 API, not app.get_window())",
+        "Tray built with TrayIconBuilder using on_menu_event and on_tray_icon_event (v2 tray API)",
+        "Menu items built with MenuItemBuilder and MenuBuilder (v2 menu API, not old CustomMenuItem/SystemTray)",
+        "Capabilities include core:tray:default and core:menu:default"
+      ]
+    }
+  ]
+}
