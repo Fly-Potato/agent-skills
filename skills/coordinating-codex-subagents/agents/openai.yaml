@@ -1,0 +1,4 @@
+interface:
+  display_name: "协调 Codex 子代理"
+  short_description: "协调跨项目所有权、契约问答与联调验证"
+  default_prompt: "使用 $coordinating-codex-subagents 判断当前任务是否需要跨项目子代理协作，给出最小所有权拆分，并按已授权范围协调执行。"

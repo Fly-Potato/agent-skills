@@ -6,6 +6,11 @@
       "title": "Desktop",
       "description": "Skills for desktop application development.",
       "skills": ["tauri-v2"]
+    },
+    {
+      "title": "Agent Workflows",
+      "description": "Skills for coordinating agent collaboration across projects.",
+      "skills": ["coordinating-codex-subagents"]
     }
   ]
 }

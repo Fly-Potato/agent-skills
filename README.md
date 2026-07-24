@@ -7,6 +7,7 @@ AI 编程助手（如 OpenCode）的技能仓库，为特定技术栈提供结�
 | 技能 | 描述 |
 |------|------|
 | [tauri-v2](/skills/tauri-v2) | Tauri v2 桌面与移动应用开发完整指南 |
+| [coordinating-codex-subagents](/skills/coordinating-codex-subagents) | 跨仓库或独立项目的 Codex 子代理协调、契约问答与联调验证 |
 
 ## 目录结构
 
@@ -14,6 +15,7 @@ AI 编程助手（如 OpenCode）的技能仓库，为特定技术栈提供结�
 skills/
 ├── <skill-name>/
 │   ├── SKILL.md          # 技能主文档
+│   ├── agents/            # 可选的 Codex UI 元数据
 │   ├── references/        # 参考资料（配置、安全、迁移等）
 │   └── evals/             # 评估测试用例
 └── ...
