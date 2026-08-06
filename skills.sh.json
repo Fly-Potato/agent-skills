@@ -11,6 +11,11 @@
       "title": "Agent Workflows",
       "description": "Skills for coordinating agent collaboration across projects.",
       "skills": ["coordinating-codex-subagents"]
+    },
+    {
+      "title": "Repository Knowledge",
+      "description": "Skills for curating and maintaining reusable repository knowledge.",
+      "skills": ["curating-repository-knowledge"]
     }
   ]
 }
