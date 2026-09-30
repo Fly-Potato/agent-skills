@@ -1,6 +1,6 @@
 ---
 name: writing-high-value-tests
-description: Use whenever the user asks about tests or testing: what to test, whether a test is worthwhile, writing or reviewing test cases, test strategy, unit/integration/system/E2E coverage, regression protection, test coverage, TDD, mocks, stubs, fakes, snapshots, flaky tests, test isolation, determinism, or test quality. Apply this skill across any language, platform, or system, even when the user asks for a code change and testing is only part of the request.
+description: "Use whenever the user asks about tests or testing: what to test, whether a test is worthwhile, writing or reviewing test cases, test strategy, unit/integration/system/E2E coverage, regression protection, test coverage, TDD, mocks, stubs, fakes, snapshots, flaky tests, test isolation, determinism, or test quality. Apply this skill across any language, platform, or system, even when the user asks for a code change and testing is only part of the request."
 ---
 
 # 高价值测试规范
