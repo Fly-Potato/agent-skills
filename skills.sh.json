@@ -16,6 +16,11 @@
       "title": "Repository Knowledge",
       "description": "Skills for curating and maintaining reusable repository knowledge.",
       "skills": ["curating-repository-knowledge"]
+    },
+    {
+      "title": "Testing",
+      "description": "Skills for designing and reviewing high-value tests.",
+      "skills": ["writing-high-value-tests"]
     }
   ]
 }
