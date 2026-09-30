@@ -102,6 +102,148 @@
         "代码和测试明确证明新语义时更新或删除旧卡",
         "业务歧义未解决时不会静默选择一方"
       ]
+    },
+    {
+      "id": 9,
+      "prompt": "检查订单取消规则并沉淀可复用的业务知识。仓库版本为 v1；需求 R-7 规定已支付订单由客服确认后才可取消，实现和测试覆盖该门槛。请让后续从中文业务词、cancelOrder 符号或路径检索时都能命中，并区分需求规则和当前实现。",
+      "expected_output": "创建一张短业务规则卡并同步索引，说明角色、触发条件、不变量、实现边界、需求和代码/测试证据及核验版本。",
+      "fixture": {
+        "requirements/R-7.md": "R-7：已支付订单只能由客服确认后取消。未支付订单可由用户自行取消。\n",
+        "src/order.js": "function cancelOrder(order) { if (order.paid && !order.supportConfirmed) throw new Error('confirmation required'); return {...order, state: 'cancelled'}; }\nmodule.exports = {cancelOrder};\n",
+        "tests/order.test.js": "const {test} = require('node:test');\nconst assert = require('node:assert/strict');\nconst {cancelOrder} = require('../src/order');\ntest('paid order requires support confirmation', () => { assert.throws(() => cancelOrder({paid: true, supportConfirmed: false})); assert.equal(cancelOrder({paid: true, supportConfirmed: true}).state, 'cancelled'); });\n",
+        "version.txt": "v1\n"
+      },
+      "checks": {
+        "changed_only": [".agents/knowledge/INDEX.md", ".agents/knowledge/repo-order-cancel.md"],
+        "exists": [".agents/knowledge/INDEX.md", ".agents/knowledge/repo-order-cancel.md"],
+        "contains": {
+          ".agents/knowledge/INDEX.md": ["cancelOrder", "取消", "repo-order-cancel.md", "current"],
+          ".agents/knowledge/repo-order-cancel.md": ["R-7", "cancelOrder", "supportConfirmed", "current", "v1", "tests/order.test.js"]
+        },
+        "index_links_valid": true,
+        "no_orphan_cards": true,
+        "no_duplicate_current": true
+      },
+      "expectations": ["业务规则与实现事实分别表述", "记录需求、代码和测试证据", "不从代码单独推断业务本意"]
+    },
+    {
+      "id": 10,
+      "prompt": "审查取消规则知识。需求 R-8 说已支付订单用户不能自行取消，但代码目前允许；业务方尚未确认是否改了规则。请更新知识状态，不要择一当作当前业务事实。",
+      "expected_output": "将卡片和索引标为 conflicted，保留需求与实现各自的证据，并登记待确认事项。",
+      "fixture": {
+        "requirements/R-8.md": "R-8：已支付订单用户不能自行取消。\n",
+        "src/order.js": "export function cancelOrder(order, actor) { return {...order, state: 'cancelled'}; }\n",
+        ".agents/knowledge/INDEX.md": "# 仓库知识索引\n\n| 作用域 | 路径/符号 | 业务词/别名 | 状态 | 知识 |\n| --- | --- | --- | --- | --- |\n| `repo` | `src/order.js`、`cancelOrder` | 订单取消 | `current` | [取消规则](repo-order-cancel.md) |\n",
+        ".agents/knowledge/repo-order-cancel.md": "# 取消规则\n\n作用域：`repo`\n状态：`current`\n结论：用户可取消已支付订单。\n证据：`src/order.js` `cancelOrder`。\n"
+      },
+      "checks": {
+        "changed_only": [".agents/knowledge/INDEX.md", ".agents/knowledge/repo-order-cancel.md"],
+        "contains": {
+          ".agents/knowledge/INDEX.md": ["conflicted", "待确认"],
+          ".agents/knowledge/repo-order-cancel.md": ["conflicted", "R-8", "cancelOrder", "待确认"]
+        },
+        "not_contains": {
+          ".agents/knowledge/INDEX.md": ["`current`"],
+          ".agents/knowledge/repo-order-cancel.md": ["状态：`current`"]
+        },
+        "index_links_valid": true
+      },
+      "expectations": ["需求和实现分开陈述", "不把实现倒推为业务事实", "冲突未解决前不写统一结论"]
+    },
+    {
+      "id": 11,
+      "prompt": "只分析订单取消的当前规则，不修改文件。索引里一张卡标记 needs-review，一张历史卡标记 deprecated；当前代码只覆盖一部分路径。请回答哪些结论已证实，哪些仍需核验。",
+      "expected_output": "核对当前代码后，仅陈述已证实的实现范围；过期和废弃卡不作为当前规则引用。",
+      "fixture": {
+        "src/order.js": "export function cancelOrder(order) { if (!order.paid) return 'cancelled'; return 'pending'; }\n",
+        ".agents/knowledge/INDEX.md": "# 仓库知识索引\n\n| 作用域 | 路径/符号 | 业务词/别名 | 状态 | 知识 |\n| --- | --- | --- | --- | --- |\n| `repo` | `cancelOrder` | 订单取消 | `needs-review` | [当前线索](repo-cancel.md) |\n| `repo` | `cancelOrder` | 旧取消流程 | `deprecated` | [旧规则](repo-old-cancel.md) |\n",
+        ".agents/knowledge/repo-cancel.md": "# 当前线索\n状态：`needs-review`\n结论：所有订单立即取消。\n最后核验：old-commit。\n",
+        ".agents/knowledge/repo-old-cancel.md": "# 旧规则\n状态：`deprecated`\n旧结论：所有订单立即取消。\n"
+      },
+      "checks": {"changed_only": [], "response_contains": ["未支付", "待核验"]},
+      "expectations": ["不把 needs-review 或 deprecated 结论作为当前事实", "尊重只分析边界"]
+    },
+    {
+      "id": 12,
+      "prompt": "只读审计知识目录：找出断链、同主题重复 current 卡和没有索引入口的孤立卡，并给出可核实的修复建议。不要修改文件。",
+      "expected_output": "指出缺失目标、两张重复 current 卡和孤立卡；文件保持不变。",
+      "fixture": {
+        ".agents/knowledge/INDEX.md": "# 仓库知识索引\n\n| 作用域 | 路径/符号 | 业务词/别名 | 状态 | 知识 |\n| --- | --- | --- | --- | --- |\n| `repo` | `cancelOrder` | 取消 | `current` | [甲](repo-cancel-a.md) |\n| `repo` | `cancelOrder` | 取消 | `current` | [乙](repo-cancel-b.md) |\n| `repo` | `refundOrder` | 退款 | `current` | [断链](missing.md) |\n",
+        ".agents/knowledge/repo-cancel-a.md": "# 取消规则甲\n状态：`current`\n",
+        ".agents/knowledge/repo-cancel-b.md": "# 取消规则乙\n状态：`current`\n",
+        ".agents/knowledge/repo-orphan.md": "# 孤立卡\n状态：`needs-review`\n"
+      },
+      "checks": {"changed_only": [], "response_contains": ["missing.md", "repo-orphan.md", "repo-cancel-a.md", "repo-cancel-b.md"]},
+      "expectations": ["发现断链、重复和孤立卡", "不为清除告警而删除未经核实的知识"]
+    },
+    {
+      "id": 13,
+      "prompt": "只做分析，不修改文件：分析 src/order.js 的取消分支。仓库还没有知识目录。",
+      "expected_output": "完成分析，保持工作区和知识目录原样。",
+      "fixture": {"src/order.js": "export const cancelOrder = order => order.paid ? 'pending' : 'cancelled';\n"},
+      "checks": {"changed_only": [], "absent": [".agents/knowledge/INDEX.md"]},
+      "expectations": ["遵守只读边界", "不创建空索引"]
+    },
+    {
+      "id": 14,
+      "prompt": "把 docs/note.md 的标题大小写机械统一。不要进行其他修改或知识沉淀。",
+      "expected_output": "只修改目标文档，不创建知识目录。",
+      "fixture": {"docs/note.md": "# order notes\n"},
+      "checks": {"changed_only": ["docs/note.md"], "must_change": ["docs/note.md"], "absent": [".agents/knowledge/INDEX.md"]},
+      "expectations": ["纯机械工作不触发知识写入"]
+    },
+    {
+      "id": 15,
+      "prompt": "只分析 services/billing 的退款调用。工作区清单声明它依赖 libs/ledger，嵌套 AGENTS.md 只有操作说明；索引还有无关的 search 项目。请列出应命中的知识，不修改文件。",
+      "expected_output": "命中 billing、直接依赖 ledger 与相关 cross-project 卡，不以嵌套 AGENTS.md 覆盖项目清单，也不读取无关 search 卡。",
+      "fixture": {
+        "workspace.json": "{\"projects\": [\"services/billing\", \"libs/ledger\", \"services/search\"]}\n",
+        "services/billing/project.json": "{\"name\": \"billing\", \"dependencies\": [\"ledger\"]}\n",
+        "services/billing/AGENTS.md": "# Billing 操作说明\n修改前运行测试。\n",
+        ".agents/knowledge/INDEX.md": "# 仓库知识索引\n\n| 作用域 | 路径/符号 | 业务词/别名 | 状态 | 知识 |\n| --- | --- | --- | --- | --- |\n| `billing` | `services/billing/refund.js` | 退款 | `current` | [退款](billing-refund.md) |\n| `ledger` | `libs/ledger/post.js` | 记账 | `current` | [记账](ledger-post.md) |\n| `cross-project` | `refund` | 审计 | `current` | [审计](cross-project-audit.md) |\n| `search` | `services/search/index.js` | 搜索 | `current` | [搜索](search-index.md) |\n",
+        ".agents/knowledge/billing-refund.md": "# 退款\n状态：`current`\n",
+        ".agents/knowledge/ledger-post.md": "# 记账\n状态：`current`\n",
+        ".agents/knowledge/cross-project-audit.md": "# 审计\n状态：`current`\n",
+        ".agents/knowledge/search-index.md": "# 搜索\n状态：`current`\n"
+      },
+      "checks": {"changed_only": [], "response_contains": ["billing", "ledger", "cross-project"], "response_not_contains": ["search-index.md"]},
+      "expectations": ["依据清单和依赖确定边界", "只加载相关知识", "嵌套 AGENTS.md 不单独证明项目边界"]
+    },
+    {
+      "id": 16,
+      "prompt": "退款处理专项 Skill 已由用户创建并验证。请迁移旧知识卡：保留触发说明和专项 Skill 名称，删除重复执行步骤，同步索引。",
+      "expected_output": "旧卡保留触发说明，索引仍指向卡片；重复步骤被移除，专项 Skill 是执行规则唯一来源。",
+      "fixture": {
+        ".agents/skills/refund-handling/SKILL.md": "---\nname: refund-handling\ndescription: Use when handling refunds.\n---\n# 退款处理\n先核对订单，再检查账务，最后记录审计。\n",
+        ".agents/knowledge/INDEX.md": "# 仓库知识索引\n\n| 作用域 | 路径/符号 | 业务词/别名 | 状态 | 知识 |\n| --- | --- | --- | --- | --- |\n| `billing` | `refundOrder` | 退款 | `current` | [退款处理](billing-refund.md) |\n",
+        ".agents/knowledge/billing-refund.md": "# 退款处理\n作用域：`billing`\n触发：处理退款时。\n步骤：先核对订单，再检查账务，最后记录审计。\n"
+      },
+      "checks": {
+        "changed_only": [".agents/knowledge/INDEX.md", ".agents/knowledge/billing-refund.md"],
+        "contains": {".agents/knowledge/billing-refund.md": ["refund-handling", "触发"]},
+        "not_contains": {".agents/knowledge/billing-refund.md": ["先核对订单，再检查账务，最后记录审计"]},
+        "index_links_valid": true,
+        "no_orphan_cards": true,
+        "no_duplicate_current": true
+      },
+      "expectations": ["不自动创建第二个专项 Skill", "索引与卡片同步", "仅保留一份执行正文"]
+    },
+    {
+      "id": 17,
+      "prompt": "在仓库 B 沉淀支付回调规则。旁边仓库 A 有一张知识卡，但不能复制；日志含 token=super-secret，仅可记录脱敏的现象。",
+      "expected_output": "仅在 B 中记录有证据的规则，不复制 A 的知识，也不写入真实令牌。",
+      "fixture": {
+        "repo-a/.agents/knowledge/INDEX.md": "# A 的知识\nsecret business rule\n",
+        "repo-b/src/callback.js": "export function callback(id) { return id; }\n",
+        "repo-b/logs/sample.log": "callback failed token=super-secret\n"
+      },
+      "checks": {
+        "changed_only": ["repo-b/.agents/knowledge/INDEX.md", "repo-b/.agents/knowledge/repo-callback.md"],
+        "not_contains": {"repo-b/.agents/knowledge/INDEX.md": ["super-secret", "secret business rule"]},
+        "forbid_in_changed_files": ["super-secret", "secret business rule"],
+        "response_not_contains": ["super-secret", "secret business rule"]
+      },
+      "expectations": ["仓库 A 的知识不能跨库复制", "敏感值不能进入知识文件", "证据不足时可以选择不创建卡片"]
     }
   ]
 }
